@@ -1,2 +1,2 @@
 # piestop
-A python-based estop button for SPJS/Chilipeppr using the RPi.
+A python-based estop button implementation for SPJS/Chilipeppr using the RPi.
