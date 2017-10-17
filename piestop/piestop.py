@@ -5,7 +5,8 @@ address = '127.0.0.1'	# The address of the spjs.
 port = '8989'		# The port that spjs is using.
 
 import websocket
-import Threading
+import threading
+import time
 
 def on_message(ws, message):
 	print(message)
@@ -17,19 +18,22 @@ def on_error(ws, error):
 	print(error)
 
 def on_open(ws):
-	def run(*args):
-		print('The connection has been opened...')
-		ws.send('!')
-	threading.Thread(target=
+	print('Connection opened!')
 
 if __name__ == '__main__':
 	#Create the websocketclass
 	#Loop until button hit and send message.
-	ws = websocket.WebSocketApp('ws://92.168.1.190:8989',
+	ws = websocket.WebSocketApp('ws://localhost:8989/ws',
 		on_error = on_error,
 		on_close = on_close,
 		on_message = on_message)
 
 	ws.on_open = on_open
-	
-	ws.run_forever()
+
+	# Run the ws listener thread.
+	wsthread = threading.Thread(target=ws.run_forever)
+	wsthread.start()
+
+	while ws.sock.connected:
+		ws.send('list')
+		time.sleep(1)
