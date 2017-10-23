@@ -23,17 +23,19 @@ def on_open(ws):
 if __name__ == '__main__':
 	#Create the websocketclass
 	#Loop until button hit and send message.
-	ws = websocket.WebSocketApp('ws://localhost:8989/ws',
+	ws = websocket.WebSocketApp('ws://192.168.1.185:8989/ws',
 		on_error = on_error,
 		on_close = on_close,
 		on_message = on_message)
 
+    # Bind the on_open function.
 	ws.on_open = on_open
 
 	# Run the ws listener thread.
 	wsthread = threading.Thread(target=ws.run_forever)
 	wsthread.start()
 
+    # Do stuff while connected.
 	while ws.sock.connected:
-		ws.send('list')
+		ws.send('sendjson {"P":"COM22","Data":[{"D":"!\n"}]')
 		time.sleep(1)
