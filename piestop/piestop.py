@@ -23,7 +23,7 @@ def on_open(ws):
 if __name__ == '__main__':
 	#Create the websocketclass
 	#Loop until button hit and send message.
-	ws = websocket.WebSocketApp('ws://192.168.1.185:8989/ws',
+	ws = websocket.WebSocketApp('ws://127.0.0.1:8989/ws',
 		on_error = on_error,
 		on_close = on_close,
 		on_message = on_message)
@@ -35,7 +35,10 @@ if __name__ == '__main__':
 	wsthread = threading.Thread(target=ws.run_forever)
 	wsthread.start()
 
+	time.sleep(3)
+	print ('Test')
     # Do stuff while connected.
-	while ws.sock.connected:
-		ws.send('sendjson {"P":"COM22","Data":[{"D":"!\n"}]')
-		time.sleep(1)
+	if ws.sock.connected:
+		print('Sending json string...')
+		ws.send('sendjson {"P":"COM3","Data":[{"D":"!"}]}')
+		print('Sent!')
