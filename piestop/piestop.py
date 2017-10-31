@@ -5,54 +5,90 @@ import threading
 import time
 import json
 
-#Global Values
-address = '127.0.0.1'	# The address of the spjs.
-port = '8989'		# The port that spjs is using.
-comport = 'COM1'	# Com port placeholder, the script will detect the one in use.
+# Global Values
+address = '127.0.0.1'  # The address of the spjs.
+port = '8989'  # The port that spjs is using.
 
-def on_message(ws, message):
-	print(time.clock())
-	print(message)
-	if message.startswith('{\n\t"SerialPorts:":'):
-		print('True')
 
-def on_close(ws):
-	print('Websocket connection has closed.')
+class PieStop:
+    def __init__(self):
+        self.previousMsg = ''
+        self.comport = 'COM1'
 
-def on_error(ws, error):
-	print(error)
+    def on_message(self, ws, message):
+        print(message)
+        if self.previousMsg == 'list':
+            print('Parsing for default message port...')
 
-def on_open(ws):
-	print('Websocket connection opened!')
-	ws.send('list')
-	print('sent list')
+            foundCom = False
+            try:
+                jsondata = json.loads(message)
+
+                for serialport in jsondata['SerialPorts']:
+                    if serialport['IsPrimary'] is True:
+                        print('Setting default serial port as ' + serialport['Name'] + '.')
+                        self.comport = serialport['Name']
+
+                if not foundCom:
+                    print("Couldn't find new comport, using default (" + self.comport + ").")
+
+            except json.JSONDecodeError:
+                print('Error decoding json, using default port ' + self.comport + '!')
+
+        # Set the previous message up.
+        self.previousMsg = message
+
+    def on_close(self, ws):
+        print('Web socket connection has closed.')
+
+
+    def on_error(self, ws, error):
+        print(error)
+
+
+    def on_open(self, ws):
+        print('Web socket connection opened!')
+        ws.send('list')
+        print('sent list')
+
+
+    def on_continuation(self, ws, message, cont):
+        print('This is a continuation\n\n\n\n\n' + message)
+
+    def start_button_loop(self, ws):
+        # Loop for button press.
+        while True:
+            print('Sending Feed-Hold...')
+            # ws.send('sendjson {"P":"COM3","Data":[{"D":"!"}]}')
+            ws.send('send {0} !'.format(self.comport))
+            print('Sent!')
+            time.sleep(5)
+
 
 if __name__ == '__main__':
-	#Connect websocket in another thread.
-	endpoint = 'ws://{0}:{1}/ws'.format(address, port)
-	ws = websocket.WebSocketApp(endpoint,
-		on_error = on_error,
-		on_close = on_close,
-		on_message = on_message)
+    ps = PieStop()
 
-	# Bind the on_open function.
-	ws.on_open = on_open
+    # Connect web socket in another thread.
+    endpoint = 'ws://{0}:{1}/ws'.format(address, port)
 
-	# Run in another thread.
-	wsthread = threading.Thread(target=ws.run_forever)
-	wsthread.start()
+    ws = websocket.WebSocketApp(endpoint,
+                                on_error=ps.on_error,
+                                on_close=ps.on_close,
+                                on_cont_message=ps.on_continuation,
+                                on_message=ps.on_message)
 
+    # Bind the on_open function.
+    ws.on_open = ps.on_open
 
-	# Loop until button pressed.
-	while not ws.sock.connected:
-		print('Attempting to connect...')
-		time.sleep(250)
-		
-		
-	print('Sending Feed-Hold...')
-	# ws.send('sendjson {"P":"COM3","Data":[{"D":"!"}]}')
-	ws.send('send {0} !'.format(comport))
-	print('Sent!')
+    # Run in another thread.
+    wsthread = threading.Thread(target=ws.run_forever)
+    wsthread.start()
 
-	wsthread.join()
+    # Loop until button pressed.
+    while not ws.sock.connected:
+        print('Attempting to connect...')
+        time.sleep(0.250)
+
+    ps.start_button_loop(ws)
+
 
