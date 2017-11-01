@@ -6,7 +6,7 @@ import time
 import json
 
 # Global Values
-address = '127.0.0.1'  # The address of the spjs.
+address = '192.168.1.185'  # The address of the spjs.
 port = '8989'  # The port that spjs is using.
 
 
@@ -52,9 +52,6 @@ class PieStop:
         print('sent list')
 
 
-    def on_continuation(self, ws, message, cont):
-        print('This is a continuation\n\n\n\n\n' + message)
-
     def start_button_loop(self, ws):
         # Loop for button press.
         while True:
@@ -74,7 +71,6 @@ if __name__ == '__main__':
     ws = websocket.WebSocketApp(endpoint,
                                 on_error=ps.on_error,
                                 on_close=ps.on_close,
-                                on_cont_message=ps.on_continuation,
                                 on_message=ps.on_message)
 
     # Bind the on_open function.
@@ -87,8 +83,9 @@ if __name__ == '__main__':
     # Loop until button pressed.
     while not ws.sock.connected:
         print('Attempting to connect...')
-        time.sleep(0.250)
+        time.sleep(0.05)
 
+    time.sleep(10)
     ps.start_button_loop(ws)
 
 
