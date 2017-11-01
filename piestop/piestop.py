@@ -4,11 +4,15 @@ import websocket
 import threading
 import time
 import json
+import RPi.GPIO as GPIO
 
 # Global Values
-address = '192.168.1.185'  # The address of the spjs.
+address = '127.0.0.1'  # The address of the spjs.
 port = '8989'  # The port that spjs is using.
 
+# Setup pi button stuff.
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class PieStop:
     def __init__(self):
@@ -16,7 +20,7 @@ class PieStop:
         self.comport = 'COM1'
 
     def on_message(self, ws, message):
-        print(message)
+        # print(message)
         if self.previousMsg == 'list':
             print('Parsing for default message port...')
 
@@ -28,6 +32,7 @@ class PieStop:
                     if serialport['IsPrimary'] is True:
                         print('Setting default serial port as ' + serialport['Name'] + '.')
                         self.comport = serialport['Name']
+                        foundCom = True
 
                 if not foundCom:
                     print("Couldn't find new comport, using default (" + self.comport + ").")
@@ -49,17 +54,18 @@ class PieStop:
     def on_open(self, ws):
         print('Web socket connection opened!')
         ws.send('list')
-        print('sent list')
 
 
     def start_button_loop(self, ws):
         # Loop for button press.
         while True:
-            print('Sending Feed-Hold...')
-            # ws.send('sendjson {"P":"COM3","Data":[{"D":"!"}]}')
-            ws.send('send {0} !'.format(self.comport))
-            print('Sent!')
-            time.sleep(5)
+            buttonstate = GPIO.input(18)
+            if buttonstate == False:
+                print('Sending Feed-Hold...')
+                # ws.send('sendjson {"P":"COM3","Data":[{"D":"!"}]}')
+                ws.send('send {0} !'.format(self.comport))
+                print('Sent!')
+                time.sleep(0.2)
 
 
 if __name__ == '__main__':
@@ -80,12 +86,12 @@ if __name__ == '__main__':
     wsthread = threading.Thread(target=ws.run_forever)
     wsthread.start()
 
-    # Loop until button pressed.
+    # Give the socket time to connect.
     while not ws.sock.connected:
         print('Attempting to connect...')
         time.sleep(0.05)
 
-    time.sleep(10)
+    # Loop until button pressed.
     ps.start_button_loop(ws)
 
 
