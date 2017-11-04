@@ -17,7 +17,7 @@ GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 class PieStop:
     def __init__(self):
         self.previousMsg = ''
-        self.comport = 'COM1'
+        self.comport = '/dev/ttyUSB0'
 
     def on_message(self, ws, message):
         # print(message)
